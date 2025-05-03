@@ -1,0 +1,16 @@
+[project]
+name = "corona-network-standard"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.8",
+    "pydantic>=2.11.4",
+    "rdflib>=7.1.4",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.8",
+]
