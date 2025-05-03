@@ -2,7 +2,7 @@
 
 ## Description
 
-This project provides a Python script that demonstrates how to model computer network components and their relationships using Pydantic classes, based on concepts from a network management ontology. It then uses the RDFLib library to translate instances of these Pydantic models into an RDF graph, representing a sample network topology including Layer 1, Layer 2 (Switches, VLANs), and basic Layer 3 elements.
+This project provides a Python script (`main.py`) that demonstrates how to model computer network components and their relationships using Pydantic classes, based on concepts from a network management ontology. It then uses the RDFLib library to translate instances of these Pydantic models into an RDF graph, representing a sample network topology including Layer 1, Layer 2 (Switches, VLANs), and basic Layer 3 elements.
 
 The ontology concepts are primarily inspired by the work described in the paper referenced below.
 
@@ -28,21 +28,42 @@ While this script doesn't implement the entire extensive ontology from the paper
 ## Requirements
 
 * Python 3.8+
-* Pydantic (`pip install pydantic`)
-* RDFLib (`pip install rdflib`)
+* Pydantic
+* RDFLib
+* Click
+
+Dependencies are listed in `pyproject.toml` and can be installed using pip:
+```bash
+pip install .
+# Or using uv:
+# uv pip install .
+```
 
 ## Usage
 
-1.  Ensure you have Python and the required libraries installed.
-2.  Save the script code to a file (e.g., `network_mapper.py`).
-3.  Run the script from your terminal:
+1.  **Clone the repository:**
     ```bash
-    python network_mapper.py
+    # Replace with actual repository URL
+    git clone <repository-url>
+    cd corona-network-standard
     ```
-4.  The script will print the generated RDF graph in Turtle format to the console. You can redirect this output to a file if needed:
+2.  **Install dependencies:**
     ```bash
-    python network_mapper.py > network_graph.ttl
+    pip install .
     ```
+3.  **Run the script:**
+    *   To print the generated RDF graph (Turtle format) to the console:
+        ```bash
+        python main.py
+        ```
+    *   To save the output to a file (e.g., `network_graph.ttl`):
+        ```bash
+        python main.py -o network_graph.ttl
+        ```
+        or
+        ```bash
+        python main.py --output-file network_graph.ttl
+        ```
 
 ## Ontology Concepts Modeled (in Script)
 
@@ -91,22 +112,22 @@ ex:VLAN10 a net:VLAN ;
 ex:Switch1 a net:Switch ;
     rdfs:label "Switch1" ;
     net:HWStatus "ON" ;
-    net:HasIFace ex:Sw1_Fa0/1,
-        ex:Sw1_Fa0/2,
-        ex:Sw1_Gi0/1 ;
+    net:HasIFace ex:Sw1_Fa0-1,
+        ex:Sw1_Fa0-2,
+        ex:Sw1_Gi0-1 ;
     net:HasNeighbor ex:Host1,
         ex:Router1 .
 
-ex:Sw1_Fa0/1 a net:Iface ;
-    rdfs:label "Sw1_Fa0/1" ;
+ex:Sw1_Fa0-1 a net:Iface ;
+    rdfs:label "Sw1_Fa0-1" ;
     net:HWStatus "ON" ;
     net:BelongsToNode ex:Switch1 ;
     net:ConnectedToLink ex:Link_Sw1_H1 ;
     net:accessVlan ex:VLAN10 ;
     net:portMode "ACCESS" .
 
-ex:Sw1_Gi0/1 a net:Iface ;
-    rdfs:label "Sw1_Gi0/1" ;
+ex:Sw1_Gi0-1 a net:Iface ;
+    rdfs:label "Sw1_Gi0-1" ;
     net:HWStatus "ON" ;
     net:BelongsToNode ex:Switch1 ;
     net:ConnectedToLink ex:Link_R1_Sw1 ;
