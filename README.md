@@ -1,5 +1,9 @@
 # Pydantic to RDF Network Ontology Mapper
 
+[![Python Tests & Coverage](https://github.com/acedrew/corona-network-standard/actions/workflows/python-test.yml/badge.svg)](https://github.com/acedrew/corona-network-standard/actions/workflows/python-test.yml)
+[![codecov](https://codecov.io/gh/acedrew/corona-network-standard/graph/badge.svg?token=YOUR_CODECOV_TOKEN_HERE)](https://codecov.io/gh/acedrew/corona-network-standard) 
+<!-- TODO: Replace YOUR_CODECOV_TOKEN_HERE in the badge URL if your repo is private and requires tokens for badges -->
+
 ## Description
 
 This project provides a Python script (`main.py`) that demonstrates how to model computer network components and their relationships using Pydantic classes, based on concepts from a network management ontology. It then uses the RDFLib library to translate instances of these Pydantic models into an RDF graph, representing a sample network topology including Layer 1, Layer 2 (Switches, VLANs), and basic Layer 3 elements.
