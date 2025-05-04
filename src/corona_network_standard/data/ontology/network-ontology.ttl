@@ -1,148 +1,181 @@
-@prefix ex: <http://www.example.org/network-instance#> .
 @prefix net: <http://www.example.org/network-ontology#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:VLAN10 a net:VLAN ;
-    rdfs:label "VLAN 10 (Users)" ;
-    net:vlanId 10 ;
-    net:vlanName "Users" .
+# --- Classes ---
 
-ex:VLAN20 a net:VLAN ;
-    rdfs:label "VLAN 20 (Servers)" ;
-    net:vlanId 20 ;
-    net:vlanName "Servers" .
+net:NetEntity rdfs:subClassOf rdfs:Resource ;
+    rdfs:label "Network Entity"@en ;
+    rdfs:comment "Base class for all network-related entities."@en .
 
-ex:VLAN99 a net:VLAN ;
-    rdfs:label "VLAN 99 (Management)" ;
-    net:vlanId 99 ;
-    net:vlanName "Management" .
+net:HWNetEntity rdfs:subClassOf net:NetEntity ;
+    rdfs:label "Hardware Network Entity"@en ;
+    rdfs:comment "A network entity that represents physical hardware."@en .
 
-net:Address a rdf:Property .
+net:LogicalEntity rdfs:subClassOf rdfs:Resource ;
+    rdfs:label "Logical Entity"@en ;
+    rdfs:comment "A network entity that represents a logical construct (e.g., VLAN, Subnet)."@en .
 
-net:Bandwidth a rdf:Property .
+# Subclasses of HWNetEntity
+net:Node rdfs:subClassOf net:HWNetEntity ;
+    rdfs:label "Node"@en ;
+    rdfs:comment "A network device capable of processing and forwarding network traffic (e.g., router, switch, host)."@en .
 
-net:BelongsToNode a rdf:Property .
+net:Iface rdfs:subClassOf net:HWNetEntity ;
+    rdfs:label "Interface"@en ;
+    rdfs:comment "A network interface card or port on a Node."@en .
 
-net:ConnectedToLink a rdf:Property .
+net:Link rdfs:subClassOf net:HWNetEntity ;
+    rdfs:label "Link"@en ;
+    rdfs:comment "A physical or logical connection between network Interfaces."@en .
 
-net:Cost a rdf:Property .
+# Subclasses of Node
+net:Router rdfs:subClassOf net:Node ;
+    rdfs:label "Router"@en .
 
-net:HWStatus a rdf:Property .
+net:Switch rdfs:subClassOf net:Node ;
+    rdfs:label "Switch"@en .
 
-net:HasIFace a rdf:Property .
+net:Host rdfs:subClassOf net:Node ;
+    rdfs:label "Host"@en ;
+    rdfs:comment "An end-device on the network (e.g., computer, server)."@en .
 
-net:HasNeighbor a rdf:Property .
+# Subclasses of LogicalEntity
+net:VLAN rdfs:subClassOf net:LogicalEntity ;
+    rdfs:label "VLAN"@en ;
+    rdfs:comment "Virtual Local Area Network."@en .
 
-net:SWNetEntity rdfs:subClassOf net:NetEntity .
+net:Subnet rdfs:subClassOf net:LogicalEntity ;
+    rdfs:label "Subnet"@en ;
+    rdfs:comment "Represents an IP subnet (e.g., 192.168.1.0/24)."@en .
 
-net:Technology a rdf:Property .
+net:AddressAssignment rdfs:subClassOf rdfs:Resource ; # Not strictly a NetEntity, but a structure linking Iface, IP, and Subnet
+    rdfs:label "Address Assignment"@en ;
+    rdfs:comment "Represents the assignment of a specific IP address on a specific Subnet to an Interface."@en .
+
+# --- Properties ---
+
+# Object Properties
+net:BelongsToNode a rdf:Property ;
+    rdfs:label "belongs to node"@en ;
+    rdfs:comment "Relates an Interface to the Node it is part of."@en ;
+    rdfs:domain net:Iface ;
+    rdfs:range net:Node .
+
+net:ConnectedToLink a rdf:Property ;
+    rdfs:label "connected to link"@en ;
+    rdfs:comment "Relates an Interface to the Link it connects to."@en ;
+    rdfs:domain net:Iface ;
+    rdfs:range net:Link .
+
+net:HasIFace a rdf:Property ;
+    rdfs:label "has interface"@en ;
+    rdfs:comment "Relates a Node to its Interfaces."@en ;
+    rdfs:domain net:Node ;
+    rdfs:range net:Iface .
+    # Consider making this the inverse of BelongsToNode: rdfs:inverseOf net:BelongsToNode .
+
+net:HasNeighbor a rdf:Property ;
+    rdfs:label "has neighbor"@en ;
+    rdfs:comment "Relates a Node to another Node considered its direct neighbor (often based on Link layer)."@en ;
+    rdfs:domain net:Node ;
+    rdfs:range net:Node . # Symmetric relationship often implied
+
+net:hasInterface a rdf:Property ;
+    rdfs:label "has interface (link)"@en ;
+    rdfs:comment "Relates a Link to the Interfaces it connects."@en ;
+    rdfs:domain net:Link ;
+    rdfs:range net:Iface .
+    # Consider making this the inverse of ConnectedToLink: rdfs:inverseOf net:ConnectedToLink .
 
 net:accessVlan a rdf:Property ;
+    rdfs:label "access VLAN"@en ;
+    rdfs:comment "Relates an Interface configured in access mode to its assigned VLAN."@en ;
     rdfs:domain net:Iface ;
     rdfs:range net:VLAN .
 
 net:allowedVlan a rdf:Property ;
+    rdfs:label "allowed VLAN"@en ;
+    rdfs:comment "Relates an Interface configured in trunk mode to the VLANs allowed to pass through it."@en ;
     rdfs:domain net:Iface ;
     rdfs:range net:VLAN .
 
-net:hasInterface a rdf:Property .
+net:hasSubnet a rdf:Property ;
+    rdfs:label "has subnet"@en ;
+    rdfs:comment "Relates a VLAN to the Subnets configured on it."@en ;
+    rdfs:domain net:VLAN ;
+    rdfs:range net:Subnet .
 
-net:portMode a rdf:Property .
+net:routesSubnet a rdf:Property ;
+    rdfs:label "routes subnet"@en ;
+    rdfs:comment "Relates a Router to a Subnet it provides routing for."@en ;
+    rdfs:domain net:Router ;
+    rdfs:range net:Subnet .
 
-net:vlanId a rdf:Property .
+net:hasAddressAssignment a rdf:Property ;
+    rdfs:label "has address assignment"@en ;
+    rdfs:comment "Relates an Interface to its specific IP address assignments."@en ;
+    rdfs:domain net:Iface ;
+    rdfs:range net:AddressAssignment .
 
-net:vlanName a rdf:Property .
+net:onSubnet a rdf:Property ;
+    rdfs:label "on subnet"@en ;
+    rdfs:comment "Relates an Address Assignment to the Subnet it belongs to."@en ;
+    rdfs:domain net:AddressAssignment ;
+    rdfs:range net:Subnet .
 
-ex:Sw1_Fa0-2 a net:Iface ;
-    rdfs:label "Sw1_Fa0-2" ;
-    net:BelongsToNode ex:Switch1 ;
-    net:HWStatus "ON" ;
-    net:portMode "UNCONFIGURED" .
+net:Bandwidth a rdf:Property ;
+    rdfs:label "bandwidth"@en ;
+    rdfs:comment "The data transfer capacity of a Link (e.g., in Mbps)."@en ;
+    rdfs:domain net:Link ;
+    rdfs:range xsd:integer . # Or xsd:decimal
 
-net:Host rdfs:subClassOf net:Node .
+net:Cost a rdf:Property ;
+    rdfs:label "cost"@en ;
+    rdfs:comment "A metric associated with traversing a Link, used in routing protocols."@en ;
+    rdfs:domain net:Link ;
+    rdfs:range xsd:integer .
 
-net:LogicalEntity rdfs:subClassOf rdfs:Resource .
+net:HWStatus a rdf:Property ;
+    rdfs:label "hardware status"@en ;
+    rdfs:comment "The operational status of a hardware entity (e.g., ON, OFF, ABN)."@en ;
+    rdfs:domain net:HWNetEntity ;
+    rdfs:range xsd:string . # Could restrict with sh:in ("ON" "OFF" "ABN") in shapes
 
-net:Router rdfs:subClassOf net:Node .
+net:Technology a rdf:Property ;
+    rdfs:label "technology"@en ;
+    rdfs:comment "The technology used by a Link (e.g., Ethernet, WiFi)."@en ;
+    rdfs:domain net:Link ;
+    rdfs:range xsd:string .
 
-net:Switch rdfs:subClassOf net:Node .
+net:portMode a rdf:Property ;
+    rdfs:label "port mode"@en ;
+    rdfs:comment "The operational mode of a switch Interface (e.g., ACCESS, TRUNK, UNCONFIGURED)."@en ;
+    rdfs:domain net:Iface ;
+    rdfs:range xsd:string . # Could restrict with sh:in ("ACCESS" "TRUNK" "UNCONFIGURED") in shapes
 
-ex:H1_Eth0 a net:Iface ;
-    rdfs:label "H1_Eth0" ;
-    net:Address "10.0.10.50" ;
-    net:BelongsToNode ex:Host1 ;
-    net:ConnectedToLink ex:Link_Sw1_H1 ;
-    net:HWStatus "ON" ;
-    net:portMode "UNCONFIGURED" .
+net:vlanId a rdf:Property ;
+    rdfs:label "VLAN ID"@en ;
+    rdfs:comment "The numeric identifier for a VLAN."@en ;
+    rdfs:domain net:VLAN ;
+    rdfs:range xsd:integer .
 
-ex:Host1 a net:Host ;
-    rdfs:label "Host1" ;
-    net:HWStatus "ON" ;
-    net:HasIFace ex:H1_Eth0 ;
-    net:HasNeighbor ex:Switch1 .
+net:vlanName a rdf:Property ;
+    rdfs:label "VLAN name"@en ;
+    rdfs:comment "A descriptive name for a VLAN."@en ;
+    rdfs:domain net:VLAN ;
+    rdfs:range xsd:string .
 
-ex:Link_R1_Sw1 a net:Link ;
-    rdfs:label "Link_R1_Sw1" ;
-    net:HWStatus "ON" ;
-    net:Technology "Ethernet" ;
-    net:hasInterface ex:R1_Eth0,
-        ex:Sw1_Gi0-1 .
+net:ipValue a rdf:Property ;
+    rdfs:label "IP value"@en ;
+    rdfs:comment "The literal IP address string (e.g., '192.168.1.100')."@en ;
+    rdfs:domain net:AddressAssignment ;
+    rdfs:range xsd:string . # Consider a more specific datatype if available/needed
 
-ex:Link_Sw1_H1 a net:Link ;
-    rdfs:label "Link_Sw1_H1" ;
-    net:HWStatus "ON" ;
-    net:Technology "Ethernet" ;
-    net:hasInterface ex:H1_Eth0,
-        ex:Sw1_Fa0-1 .
-
-ex:R1_Eth0 a net:Iface ;
-    rdfs:label "R1_Eth0" ;
-    net:Address "10.0.0.1" ;
-    net:BelongsToNode ex:Router1 ;
-    net:ConnectedToLink ex:Link_R1_Sw1 ;
-    net:HWStatus "ON" ;
-    net:portMode "UNCONFIGURED" .
-
-ex:Router1 a net:Router ;
-    rdfs:label "Router1" ;
-    net:HWStatus "ON" ;
-    net:HasIFace ex:R1_Eth0 ;
-    net:HasNeighbor ex:Switch1 .
-
-ex:Sw1_Fa0-1 a net:Iface ;
-    rdfs:label "Sw1_Fa0-1" ;
-    net:BelongsToNode ex:Switch1 ;
-    net:ConnectedToLink ex:Link_Sw1_H1 ;
-    net:HWStatus "ON" ;
-    net:portMode "UNCONFIGURED" .
-
-ex:Sw1_Gi0-1 a net:Iface ;
-    rdfs:label "Sw1_Gi0-1" ;
-    net:BelongsToNode ex:Switch1 ;
-    net:ConnectedToLink ex:Link_R1_Sw1 ;
-    net:HWStatus "ON" ;
-    net:portMode "UNCONFIGURED" .
-
-net:Link rdfs:subClassOf net:HWNetEntity .
-
-net:NetEntity rdfs:subClassOf rdfs:Resource .
-
-net:HWNetEntity rdfs:subClassOf net:NetEntity .
-
-net:Node rdfs:subClassOf net:HWNetEntity .
-
-ex:Switch1 a net:Switch ;
-    rdfs:label "Switch1" ;
-    net:HWStatus "ON" ;
-    net:HasIFace ex:Sw1_Fa0-1,
-        ex:Sw1_Fa0-2,
-        ex:Sw1_Gi0-1 ;
-    net:HasNeighbor ex:Host1,
-        ex:Router1 .
-
-net:VLAN rdfs:subClassOf net:LogicalEntity .
-
-net:Iface rdfs:subClassOf net:HWNetEntity .
+net:subnetCidr a rdf:Property ;
+    rdfs:label "subnet CIDR"@en ;
+    rdfs:comment "The CIDR notation for the subnet (e.g., '192.168.1.0/24')."@en ;
+    rdfs:domain net:Subnet ;
+    rdfs:range xsd:string .
 

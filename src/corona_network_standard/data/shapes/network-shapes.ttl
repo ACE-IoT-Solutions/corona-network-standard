@@ -18,10 +18,53 @@ net:VLANShape
     sh:property [
         sh:path net:vlanName ;
         sh:datatype xsd:string ;
-        sh:minCount 1 ;
-        sh:maxCount 1 ;
+        sh:maxCount 1 ; # Optional name
         sh:name "VLAN Name" ;
         sh:description "The descriptive name for the VLAN." ;
+    ] ;
+    sh:property [
+        sh:path net:hasSubnet ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Subnet ; # Ensures the value is a Subnet instance
+        sh:name "Has Subnet" ;
+        sh:description "Relates a VLAN to the Subnets configured on it." ;
+    ] .
+
+# Shape for Subnet class
+net:SubnetShape
+    a sh:NodeShape ;
+    sh:targetClass net:Subnet ;
+    sh:property [
+        sh:path net:subnetCidr ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Subnet CIDR" ;
+        sh:description "The CIDR notation for the subnet (e.g., '192.168.1.0/24')." ;
+        # Consider adding sh:pattern for CIDR format validation
+    ] .
+
+# Shape for AddressAssignment class
+net:AddressAssignmentShape
+    a sh:NodeShape ;
+    sh:targetClass net:AddressAssignment ;
+    sh:property [
+        sh:path net:ipValue ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "IP Value" ;
+        sh:description "The literal IP address string." ;
+        # Consider adding sh:pattern for IP address format validation
+    ] ;
+    sh:property [
+        sh:path net:onSubnet ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Subnet ; # Ensures the value links to a Subnet instance
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "On Subnet" ;
+        sh:description "Relates the address assignment to its Subnet." ;
     ] .
 
 # Shape for Node class (superclass for Host, Router, Switch)
@@ -75,10 +118,11 @@ net:IfaceShape
         sh:name "Port Mode" ;
     ] ;
     sh:property [
-        sh:path net:Address ;
-        sh:datatype xsd:string ; # Could use sh:pattern for IP validation
-        sh:maxCount 1 ;
-        sh:name "IP Address" ;
+        sh:path net:hasAddressAssignment ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:AddressAssignment ; # Ensures the value is an AddressAssignment instance
+        sh:name "Has Address Assignment" ;
+        sh:description "Links an Interface to its IP address assignments." ;
     ] ;
     sh:property [
         sh:path net:ConnectedToLink ;
@@ -89,64 +133,20 @@ net:IfaceShape
     ] ;
     sh:property [
         sh:path net:accessVlan ;
-        sh:nodeKind sh:IRI ;
+        sh:nodeKind sh:IRI ; # Changed from datatype
         sh:class net:VLAN ;
         sh:maxCount 1 ; # Assuming an access port belongs to one VLAN
         sh:name "Access VLAN" ;
     ] ;
      sh:property [
         sh:path net:allowedVlan ;
-        sh:nodeKind sh:IRI ;
+        sh:nodeKind sh:IRI ; # Changed from datatype
         sh:class net:VLAN ;
         sh:name "Allowed VLAN" ; # For trunk ports
     ] .
 
-
 # Shape for Link class
 net:LinkShape
-    a sh:NodeShape ;
-    sh:targetClass net:Link ;
-    sh:property [
-        sh:path net:HWStatus ;
-        sh:datatype xsd:string ;
-        sh:minCount 1 ;
-        sh:maxCount 1 ;
-        sh:name "Hardware Status" ;
-    ] ;
-    sh:property [
-        sh:path net:Technology ;
-        sh:datatype xsd:string ;
-        sh:minCount 1 ;
-        sh:maxCount 1 ;
-        sh:name "Technology" ;
-    ] ;
-    sh:property [
-        sh:path net:hasInterface ;
-        sh:nodeKind sh:IRI ;
-        sh:class net:Iface ;
-        sh:minCount 2 ; # A link connects at least two interfaces
-        sh:name "Has Interface" ;
-    ] .
-
-# Ensure Iface.ConnectedToLink points back to a Link that has the Iface (using SPARQL)
-net:IfaceLinkConsistencySPARQLShape
-    a sh:NodeShape ;
-    sh:targetClass net:Iface ;
-    sh:sparql [
-        sh:message "If an Iface ($this) is ConnectedToLink ?link, then ?link must have $this in its net:hasInterface property." ;
-        sh:select """
-            SELECT $this ?link
-            WHERE {
-                $this net:ConnectedToLink ?link .
-                FILTER NOT EXISTS {
-                    ?link net:hasInterface $this .
-                }
-            }
-            """ ;
-    ] .
-
-# Ensure Node.HasIFace points back to an Iface that belongs to the Node (using SPARQL)
-net:NodeIfaceConsistencySPARQLShape
     a sh:NodeShape ;
     sh:targetClass net:Node ;
     sh:sparql [
@@ -161,18 +161,3 @@ net:NodeIfaceConsistencySPARQLShape
             }
             """ ;
     ] .
-
-# Ensure Node.HasNeighbor points back to a Node that has the original Node as a neighbor (optional, assumes symmetric neighbor relationship)
-# net:NodeNeighborConsistencyShape
-#     a sh:NodeShape ;
-#     sh:targetClass net:Node ;
-#     sh:property [
-#         sh:path net:HasNeighbor ;
-#         sh:qualifiedValueShape [
-#             sh:path net:HasNeighbor ;
-#             sh:hasValue $this ; # $this refers to the target Node node
-#         ] ;
-#         sh:qualifiedMinCount 1 ;
-#         sh:message "If Node A HasNeighbor Node B, Node B must list Node A in its HasNeighbor property (if relationship is symmetric)." ;
-#     ] .
-

@@ -1,5 +1,11 @@
+"""
+Main command-line interface (CLI) for the Corona Network Standard tool.
+
+Provides commands to generate example network RDF data and validate
+existing network RDF data against the standard's SHACL shapes.
+"""
 import click
-from typing import List
+from typing import List, Optional
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import RDF, RDFS
 import sys
@@ -19,9 +25,16 @@ def cli():
 # --- Generate Command ---
 @cli.command(name="generate")
 @click.option('--output-file', '-o', default=None, help='Path to the output RDF file (Turtle format). If not provided, prints to stdout.')
-def generate_network_rdf(output_file) -> None:
-    """Generates an RDF graph representing the network topology."""
+def generate_network_rdf(output_file: Optional[str]) -> None:
+    """
+    Generates an RDF graph representing an example network topology based on the models.
 
+    Uses the `create_example_network` function to get Pydantic model instances,
+    then serializes them to RDF Turtle format.
+
+    Args:
+        output_file: Optional path to save the generated RDF. If None, prints to stdout.
+    """
     # --- Get Example Network Entities ---
     entities: List[BaseEntity] = create_example_network()
 
@@ -33,43 +46,6 @@ def generate_network_rdf(output_file) -> None:
     g.bind("ex", EX)
     g.bind("rdfs", RDFS)
     g.bind("rdf", RDF)
-
-    # --- Define Ontology Structure in RDF (Optional - could be removed if ontology is stable) ---
-    # Classes
-    g.add((NETWORK.NetEntity, RDFS.subClassOf, RDFS.Resource))
-    g.add((NETWORK.HWNetEntity, RDFS.subClassOf, NETWORK.NetEntity))
-    g.add((NETWORK.SWNetEntity, RDFS.subClassOf, NETWORK.NetEntity))  # If needed
-    g.add(
-        (NETWORK.LogicalEntity, RDFS.subClassOf, RDFS.Resource)
-    )  # Base for logical things
-    g.add((NETWORK.Node, RDFS.subClassOf, NETWORK.HWNetEntity))
-    g.add((NETWORK.Router, RDFS.subClassOf, NETWORK.Node))
-    g.add((NETWORK.Host, RDFS.subClassOf, NETWORK.Node))
-    g.add((NETWORK.Switch, RDFS.subClassOf, NETWORK.Node))
-    g.add((NETWORK.Iface, RDFS.subClassOf, NETWORK.HWNetEntity))
-    g.add((NETWORK.Link, RDFS.subClassOf, NETWORK.HWNetEntity))
-    g.add((NETWORK.VLAN, RDFS.subClassOf, NETWORK.LogicalEntity))
-    # Properties (Object Properties)
-    g.add((NETWORK.HasIFace, RDF.type, RDF.Property))
-    g.add((NETWORK.BelongsToNode, RDF.type, RDF.Property))
-    g.add((NETWORK.ConnectedToLink, RDF.type, RDF.Property))
-    g.add((NETWORK.HasNeighbor, RDF.type, RDF.Property))
-    g.add((NETWORK.hasInterface, RDF.type, RDF.Property))
-    g.add((NETWORK.accessVlan, RDF.type, RDF.Property))
-    g.add((NETWORK.accessVlan, RDFS.range, NETWORK.VLAN))
-    g.add((NETWORK.accessVlan, RDFS.domain, NETWORK.Iface))
-    g.add((NETWORK.allowedVlan, RDF.type, RDF.Property))
-    g.add((NETWORK.allowedVlan, RDFS.range, NETWORK.VLAN))
-    g.add((NETWORK.allowedVlan, RDFS.domain, NETWORK.Iface))
-    # Properties (Datatype Properties)
-    g.add((NETWORK.HWStatus, RDF.type, RDF.Property))
-    g.add((NETWORK.Address, RDF.type, RDF.Property))
-    g.add((NETWORK.Bandwidth, RDF.type, RDF.Property))
-    g.add((NETWORK.Technology, RDF.type, RDF.Property))
-    g.add((NETWORK.Cost, RDF.type, RDF.Property))
-    g.add((NETWORK.portMode, RDF.type, RDF.Property))
-    g.add((NETWORK.vlanId, RDF.type, RDF.Property))
-    g.add((NETWORK.vlanName, RDF.type, RDF.Property))
 
     # --- Populate Graph ---
     for entity in entities:
@@ -97,9 +73,17 @@ def generate_network_rdf(output_file) -> None:
 @click.argument('data-graph-file', type=click.Path(exists=True, dir_okay=False))
 @click.option('--shapes-file', '-s', default=None, help='Path to the SHACL shapes file (Turtle format). Defaults to the packaged shapes file.')
 @click.option('--ontology-file', '-t', default=None, help='Path to the ontology file (Turtle format). Defaults to the packaged ontology file.')
-def validate_network_rdf(data_graph_file, shapes_file, ontology_file):
-    """Validates a network RDF data graph against SHACL shapes."""
+def validate_network_rdf(data_graph_file: str, shapes_file: Optional[str], ontology_file: Optional[str]) -> None:
+    """
+    Validates a network RDF data graph against the Corona Network Standard SHACL shapes.
 
+    Optionally uses the network ontology for RDFS inference during validation.
+
+    Args:
+        data_graph_file: Path to the RDF data graph file to validate.
+        shapes_file: Optional path to a custom SHACL shapes file. Defaults to the packaged one.
+        ontology_file: Optional path to a custom ontology file. Defaults to the packaged one.
+    """
     # Determine shapes file path
     if shapes_file:
         shacl_graph_path = shapes_file

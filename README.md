@@ -21,9 +21,12 @@ While this script doesn't implement the entire extensive ontology from the paper
 * Uses **RDFLib** to generate RDF graphs based on the model instances.
 * Models core network hardware entities: `Node`, `Router`, `Switch`, `Host`, `Iface`, `Link`.
 * Includes Layer 2 concepts: `VLAN`, Interface `portMode` (ACCESS/TRUNK), `accessVlan`, `allowedVlan` relationships.
+* Includes Layer 3 concepts: `Subnet`, `AddressAssignment`, `routesSubnet`.
+* Supports adding human-readable `description` fields to models, serialized as `rdfs:comment`.
 * Defines basic RDF Schema (RDFS) for the modeled classes and properties within the generated graph.
 * Includes a concrete example network demonstrating the usage.
 * Outputs the resulting network representation as an RDF graph in **Turtle (.ttl)** format.
+* Provides a CLI command to **validate** RDF data against packaged SHACL shapes and ontology.
 
 ## Requirements
 
@@ -98,16 +101,23 @@ The script currently models and generates RDF for the following main concepts:
     * `net:Link` (Physical Link)
     * `net:LogicalEntity` (Base for logical constructs)
     * `net:VLAN` (Virtual LAN)
+    * `net:Subnet`
+    * `net:AddressAssignment`
 * **Key Properties:**
-    * `rdf:type`, `rdfs:label`
+    * `rdf:type`, `rdfs:label`, `rdfs:comment` (for descriptions)
     * `net:HWStatus` (ON, OFF, ABN)
     * `net:HasIFace` / `net:BelongsToNode` (Node <-> Iface)
-    * `net:ConnectedToLink` / `net:hasInterface` (Iface <-> Link, simplified)
+    * `net:ConnectedToLink` / `net:hasInterface` (Iface <-> Link)
     * `net:HasNeighbor` (Node <-> Node)
-    * `net:Address` (IP Address on Iface)
+    * `net:ipValue` (Literal IP on AddressAssignment)
+    * `net:onSubnet` (AddressAssignment -> Subnet)
+    * `net:hasAddressAssignment` (Iface -> AddressAssignment)
+    * `net:subnetCidr` (Literal CIDR on Subnet)
+    * `net:routesSubnet` (Router -> Subnet)
     * `net:Bandwidth`, `net:Technology`, `net:Cost` (Link properties)
     * `net:portMode` (ACCESS, TRUNK, UNCONFIGURED on Iface)
     * `net:vlanId`, `net:vlanName` (VLAN properties)
+    * `net:hasSubnet` (VLAN -> Subnet)
     * `net:accessVlan` (Iface -> VLAN relationship for access ports)
     * `net:allowedVlan` (Iface -> VLAN relationship for trunk ports)
 
@@ -116,20 +126,29 @@ The script currently models and generates RDF for the following main concepts:
 ## Example Output Snippet (Turtle)
 
 ```turtle
-@prefix ex: [http://www.example.org/network-instance#](http://www.example.org/network-instance#) .
-@prefix net: [http://www.example.org/network-ontology#](http://www.example.org/network-ontology#) .
-@prefix rdf: [http://www.w3.org/1999/02/22-rdf-syntax-ns#](http://www.w3.org/1999/02/22-rdf-syntax-ns#) .
-@prefix rdfs: [http://www.w3.org/2000/01/rdf-schema#](http://www.w3.org/2000/01/rdf-schema#) .
+@prefix ex: <http://www.example.org/network-instance#> .
+@prefix net: <http://www.example.org/network-ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ... Ontology Definitions (Classes, Properties) ...
 
-ex:VLAN10 a net:VLAN ;
-    rdfs:label "VLAN 10 (Users)" ;
+ex:Subnet_10.0.10.0_24 a net:Subnet ;
+    rdfs:label "Subnet 10.0.10.0/24" ;
+    rdfs:comment "Subnet for user devices" ;
+    net:subnetCidr "10.0.10.0/24"^^xsd:string .
+
+ex:VLAN10_obj a net:VLAN ;
+    rdfs:label "VLAN10_obj" ;
+    rdfs:comment "VLAN for general user access" ;
+    net:hasSubnet ex:Subnet_10.0.10.0_24 ;
     net:vlanId 10 ;
     net:vlanName "Users" .
 
 ex:Switch1 a net:Switch ;
     rdfs:label "Switch1" ;
+    rdfs:comment "Access layer switch 1" ;
     net:HWStatus "ON" ;
     net:HasIFace ex:Sw1_Fa0-1,
         ex:Sw1_Fa0-2,
@@ -142,17 +161,7 @@ ex:Sw1_Fa0-1 a net:Iface ;
     net:HWStatus "ON" ;
     net:BelongsToNode ex:Switch1 ;
     net:ConnectedToLink ex:Link_Sw1_H1 ;
-    net:accessVlan ex:VLAN10 ;
+    net:accessVlan ex:VLAN10_obj ;
     net:portMode "ACCESS" .
-
-ex:Sw1_Gi0-1 a net:Iface ;
-    rdfs:label "Sw1_Gi0-1" ;
-    net:HWStatus "ON" ;
-    net:BelongsToNode ex:Switch1 ;
-    net:ConnectedToLink ex:Link_R1_Sw1 ;
-    net:allowedVlan ex:VLAN10,
-        ex:VLAN20,
-        ex:VLAN99 ;
-    net:portMode "TRUNK" .
 
 # ... other entities and relationships ...

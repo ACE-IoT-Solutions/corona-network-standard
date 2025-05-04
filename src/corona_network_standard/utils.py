@@ -1,26 +1,42 @@
+"""
+Utility functions for the Corona Network Standard tool.
+"""
 import importlib.resources
 import sys
 import click
+from pathlib import Path
 
-def get_resource_path(package: str, resource: str) -> str:
-    """Gets the path to a resource within the package."""
+def get_resource_path(package: str, resource_name: str) -> Path:
+    """
+    Safely retrieves the path to a packaged resource using importlib.resources.
+
+    Handles potential deprecation warnings and provides a fallback for older Python versions.
+
+    Args:
+        package: The name of the package containing the resource (e.g., 'corona_network_standard.data.shapes').
+        resource_name: The name of the resource file (e.g., 'network-shapes.ttl').
+
+    Returns:
+        A Path object pointing to the resource file.
+
+    Raises:
+        FileNotFoundError: If the resource cannot be found within the package.
+    """
     try:
-        # Use files() for modern Python (returns Traversable)
-        # The path needs to be resolved within the context manager
-        with importlib.resources.files(package) as package_path:
-            resource_path = package_path / resource
-            if resource_path.is_file():
-                # Ensure the path is resolved to a string before exiting the context
-                resolved_path = str(resource_path.resolve())
-                return resolved_path
-            else:
-                raise FileNotFoundError(f"Resource not found or not a file: {resource} in {package}")
-    except (ImportError, AttributeError, FileNotFoundError, TypeError) as e:
-        # Fallback for older Python or if files() fails
-        click.echo(f"Using fallback importlib.resources.path due to error: {e}", err=True)
+        # Use files() API available in Python 3.9+
+        if sys.version_info >= (3, 9):
+            return importlib.resources.files(package).joinpath(resource_name)
+        else:
+            # Fallback for Python < 3.9 (may show DeprecationWarning)
+            with importlib.resources.path(package, resource_name) as path:
+                return path
+    except (ModuleNotFoundError, FileNotFoundError, TypeError) as e: # Added TypeError for context manager issue
+        # Attempt fallback for potential zipapp/context manager issues
         try:
-            with importlib.resources.path(package, resource) as p:
-                 return str(p)
-        except Exception as fallback_e:
-            click.echo(f"Error finding resource {resource} in package {package} using fallback: {fallback_e}", err=True)
-            sys.exit(1)
+            with importlib.resources.path(package, resource_name) as path:
+                 print(f"Using fallback importlib.resources.path due to error: {e}", file=sys.stderr)
+                 return path
+        except Exception as final_e:
+             raise FileNotFoundError(
+                 f"Resource '{resource_name}' not found in package '{package}'. Original error: {e}, Fallback error: {final_e}"
+             ) from final_e
