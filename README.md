@@ -47,23 +47,42 @@ pip install .
     git clone <repository-url>
     cd corona-network-standard
     ```
-2.  **Install dependencies:**
+2.  **Install dependencies (including the tool itself):**
     ```bash
     pip install .
+    # Or for development (including test dependencies):
+    # pip install -e .[dev]
+    # Or using uv:
+    # uv pip install .
+    # uv pip install -e .[dev]
     ```
-3.  **Run the script:**
-    *   To print the generated RDF graph (Turtle format) to the console:
-        ```bash
-        python main.py
-        ```
-    *   To save the output to a file (e.g., `network_graph.ttl`):
-        ```bash
-        python main.py -o network_graph.ttl
-        ```
-        or
-        ```bash
-        python main.py --output-file network_graph.ttl
-        ```
+3.  **Run the tool:**
+
+    The tool provides two main commands: `generate` and `validate`.
+
+    *   **Generate Example Network Data:**
+        *   To print the generated RDF graph (Turtle format) to the console:
+            ```bash
+            corona-network-tool generate
+            ```
+        *   To save the output to a file (e.g., `example-network-data.ttl`):
+            ```bash
+            corona-network-tool generate -o example-network-data.ttl
+            ```
+            or
+            ```bash
+            corona-network-tool generate --output-file example-network-data.ttl
+            ```
+
+    *   **Validate Network Data:**
+        *   To validate an existing RDF file (e.g., the one generated above) against the packaged SHACL shapes and ontology:
+            ```bash
+            corona-network-tool validate example-network-data.ttl
+            ```
+        *   To validate using custom shapes or ontology files:
+            ```bash
+            corona-network-tool validate your-data.ttl -s path/to/your-shapes.ttl -t path/to/your-ontology.ttl
+            ```
 
 ## Ontology Concepts Modeled (in Script)
 

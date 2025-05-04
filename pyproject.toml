@@ -1,6 +1,6 @@
 [project]
 name = "corona-network-standard"
-version = "0.1.0"
+version = "0.1.1"
 description = "Corona Network Standard Ontology and Validation Tool"
 readme = "README.md"
 requires-python = ">=3.10" # Match other projects
@@ -60,3 +60,8 @@ ignore = ["E203", "E501"] # Ignore common conflicts/preferences
 
 [tool.ruff.lint.isort] # Add basic isort config
 known-first-party = ["corona_network_standard"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

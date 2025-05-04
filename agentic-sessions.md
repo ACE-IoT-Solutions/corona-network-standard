@@ -58,3 +58,29 @@ The `corona-network-tool` now has two commands:
 *   `validate`: Validates a given RDF data graph against the packaged SHACL shapes (`network-shapes.ttl`) and ontology (`network-ontology.ttl`), utilizing RDFS inference.
 
 Both Pydantic model validation and SHACL graph validation are working correctly.
+
+## Session 3: Refactoring and Testing (2025-05-03)
+
+**Goal:** Refactor the codebase for better organization and add automated tests.
+
+**Steps:**
+
+1.  **Refactor `main.py`:**
+    *   Moved Pydantic model definitions and related namespaces (`NETWORK`, `EX`) to `src/corona_network_standard/models.py`.
+    *   Moved the example network creation logic into a `create_example_network` function in `src/corona_network_standard/examples.py`.
+    *   Moved the `get_resource_path` helper function to `src/corona_network_standard/utils.py`.
+    *   Updated `src/corona_network_standard/main.py` to import the moved components from their new modules.
+
+2.  **Add Test Suite:**
+    *   Ensured `pytest` and `pytest-cov` were added to `dev` dependencies in `pyproject.toml`.
+    *   Added basic `pytest` configuration (`[tool.pytest.ini_options]`) to `pyproject.toml`.
+    *   Created a `tests` directory.
+    *   Created `tests/test_validation.py`.
+    *   Implemented a test `test_generate_and_validate` using `click.testing.CliRunner` and `pytest` fixtures (`runner`, `tmp_path`) to:
+        *   Execute the `generate` command, saving output to a temporary file.
+        *   Execute the `validate` command on the generated file.
+        *   Assert that both commands exit successfully and the validation confirms conformance.
+
+**Outcome:**
+
+The codebase is now better organized with distinct modules for models, example data, and utilities. An automated test suite using `pytest` verifies the core functionality of generating and validating network data, ensuring that future changes do not break this workflow.
