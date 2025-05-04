@@ -49,6 +49,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 # Add namespace_packages = true if using namespace packages
 # Add check_untyped_defs = true for stricter checking if desired
+plugins = ["pydantic.mypy"]
 
 [tool.ruff] # Add basic ruff config
 line-length = 100
