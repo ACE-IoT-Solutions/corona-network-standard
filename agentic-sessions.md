@@ -14,3 +14,47 @@
     *   Included instructions on how to clone the repository and install dependencies.
     *   Updated the usage section to demonstrate the new CLI options for outputting to console or a file.
     *   Corrected the interface names in the example Turtle output snippet to use hyphens instead of slashes.
+
+## Session 2: Adding SHACL Validation (2025-05-03)
+
+**Goal:** Add SHACL validation capabilities to the `corona-network-standard` tool.
+
+**Steps:**
+
+1.  **Restructure Data Files:**
+    *   Created `src/corona_network_standard/data/ontology` and `src/corona_network_standard/data/shapes` directories.
+    *   Moved the existing ontology TTL file to `data/ontology/network-ontology.ttl`.
+    *   Created an initial SHACL shapes file `data/shapes/network-shapes.ttl` based on the ontology.
+
+2.  **Refactor `main.py`:**
+    *   Introduced `click.group()` to manage multiple commands.
+    *   Renamed the existing generation logic into a `generate` command.
+    *   Added a new `validate` command.
+
+3.  **Add Dependencies:**
+    *   Added `pyshacl` to `pyproject.toml` for SHACL validation.
+    *   Added `importlib-resources` for accessing package data.
+    *   Corrected the `[dependency-groups]` section to `[project.optional-dependencies]` in `pyproject.toml`.
+
+4.  **Implement Validation Logic:**
+    *   Added logic to the `validate` command to:
+        *   Load the data graph provided as an argument.
+        *   Load the SHACL shapes graph (either from a specified file or the packaged default).
+        *   Optionally load the ontology graph for inference.
+        *   Use `pyshacl.validate` to perform the validation.
+        *   Report conformance status and validation results.
+    *   Implemented a `get_resource_path` helper function using `importlib.resources` to reliably locate the packaged shapes and ontology files.
+
+5.  **Debugging and Refinement:**
+    *   **Pydantic Validation:** Debugged an issue where the Pydantic validator for `Iface` wasn't triggering correctly when aliases were used. Resolved by adding `model_config = ConfigDict(populate_by_name=True)` to the `Iface` model.
+    *   **SHACL Parsing:** Encountered errors with `pyshacl` parsing `sh:qualifiedValueShape` constraints using `$this`. Replaced these constraints in `network-shapes.ttl` with equivalent `sh:sparql` constraints.
+    *   **Resource Loading:** Fixed issues in `get_resource_path` related to handling `Traversable` objects from `importlib.resources.files` and ensuring paths were resolved correctly.
+    *   **Cleanup:** Removed the Pydantic validation test block from the `generate` command to avoid printing test output during normal generation.
+
+**Outcome:**
+
+The `corona-network-tool` now has two commands:
+*   `generate`: Creates an example network RDF graph based on Pydantic models.
+*   `validate`: Validates a given RDF data graph against the packaged SHACL shapes (`network-shapes.ttl`) and ontology (`network-ontology.ttl`), utilizing RDFS inference.
+
+Both Pydantic model validation and SHACL graph validation are working correctly.

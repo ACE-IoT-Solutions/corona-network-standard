@@ -1,0 +1,148 @@
+@prefix ex: <http://www.example.org/network-instance#> .
+@prefix net: <http://www.example.org/network-ontology#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:VLAN10 a net:VLAN ;
+    rdfs:label "VLAN 10 (Users)" ;
+    net:vlanId 10 ;
+    net:vlanName "Users" .
+
+ex:VLAN20 a net:VLAN ;
+    rdfs:label "VLAN 20 (Servers)" ;
+    net:vlanId 20 ;
+    net:vlanName "Servers" .
+
+ex:VLAN99 a net:VLAN ;
+    rdfs:label "VLAN 99 (Management)" ;
+    net:vlanId 99 ;
+    net:vlanName "Management" .
+
+net:Address a rdf:Property .
+
+net:Bandwidth a rdf:Property .
+
+net:BelongsToNode a rdf:Property .
+
+net:ConnectedToLink a rdf:Property .
+
+net:Cost a rdf:Property .
+
+net:HWStatus a rdf:Property .
+
+net:HasIFace a rdf:Property .
+
+net:HasNeighbor a rdf:Property .
+
+net:SWNetEntity rdfs:subClassOf net:NetEntity .
+
+net:Technology a rdf:Property .
+
+net:accessVlan a rdf:Property ;
+    rdfs:domain net:Iface ;
+    rdfs:range net:VLAN .
+
+net:allowedVlan a rdf:Property ;
+    rdfs:domain net:Iface ;
+    rdfs:range net:VLAN .
+
+net:hasInterface a rdf:Property .
+
+net:portMode a rdf:Property .
+
+net:vlanId a rdf:Property .
+
+net:vlanName a rdf:Property .
+
+ex:Sw1_Fa0-2 a net:Iface ;
+    rdfs:label "Sw1_Fa0-2" ;
+    net:BelongsToNode ex:Switch1 ;
+    net:HWStatus "ON" ;
+    net:portMode "UNCONFIGURED" .
+
+net:Host rdfs:subClassOf net:Node .
+
+net:LogicalEntity rdfs:subClassOf rdfs:Resource .
+
+net:Router rdfs:subClassOf net:Node .
+
+net:Switch rdfs:subClassOf net:Node .
+
+ex:H1_Eth0 a net:Iface ;
+    rdfs:label "H1_Eth0" ;
+    net:Address "10.0.10.50" ;
+    net:BelongsToNode ex:Host1 ;
+    net:ConnectedToLink ex:Link_Sw1_H1 ;
+    net:HWStatus "ON" ;
+    net:portMode "UNCONFIGURED" .
+
+ex:Host1 a net:Host ;
+    rdfs:label "Host1" ;
+    net:HWStatus "ON" ;
+    net:HasIFace ex:H1_Eth0 ;
+    net:HasNeighbor ex:Switch1 .
+
+ex:Link_R1_Sw1 a net:Link ;
+    rdfs:label "Link_R1_Sw1" ;
+    net:HWStatus "ON" ;
+    net:Technology "Ethernet" ;
+    net:hasInterface ex:R1_Eth0,
+        ex:Sw1_Gi0-1 .
+
+ex:Link_Sw1_H1 a net:Link ;
+    rdfs:label "Link_Sw1_H1" ;
+    net:HWStatus "ON" ;
+    net:Technology "Ethernet" ;
+    net:hasInterface ex:H1_Eth0,
+        ex:Sw1_Fa0-1 .
+
+ex:R1_Eth0 a net:Iface ;
+    rdfs:label "R1_Eth0" ;
+    net:Address "10.0.0.1" ;
+    net:BelongsToNode ex:Router1 ;
+    net:ConnectedToLink ex:Link_R1_Sw1 ;
+    net:HWStatus "ON" ;
+    net:portMode "UNCONFIGURED" .
+
+ex:Router1 a net:Router ;
+    rdfs:label "Router1" ;
+    net:HWStatus "ON" ;
+    net:HasIFace ex:R1_Eth0 ;
+    net:HasNeighbor ex:Switch1 .
+
+ex:Sw1_Fa0-1 a net:Iface ;
+    rdfs:label "Sw1_Fa0-1" ;
+    net:BelongsToNode ex:Switch1 ;
+    net:ConnectedToLink ex:Link_Sw1_H1 ;
+    net:HWStatus "ON" ;
+    net:portMode "UNCONFIGURED" .
+
+ex:Sw1_Gi0-1 a net:Iface ;
+    rdfs:label "Sw1_Gi0-1" ;
+    net:BelongsToNode ex:Switch1 ;
+    net:ConnectedToLink ex:Link_R1_Sw1 ;
+    net:HWStatus "ON" ;
+    net:portMode "UNCONFIGURED" .
+
+net:Link rdfs:subClassOf net:HWNetEntity .
+
+net:NetEntity rdfs:subClassOf rdfs:Resource .
+
+net:HWNetEntity rdfs:subClassOf net:NetEntity .
+
+net:Node rdfs:subClassOf net:HWNetEntity .
+
+ex:Switch1 a net:Switch ;
+    rdfs:label "Switch1" ;
+    net:HWStatus "ON" ;
+    net:HasIFace ex:Sw1_Fa0-1,
+        ex:Sw1_Fa0-2,
+        ex:Sw1_Gi0-1 ;
+    net:HasNeighbor ex:Host1,
+        ex:Router1 .
+
+net:VLAN rdfs:subClassOf net:LogicalEntity .
+
+net:Iface rdfs:subClassOf net:HWNetEntity .
+

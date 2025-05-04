@@ -1,16 +1,61 @@
 [project]
 name = "corona-network-standard"
 version = "0.1.0"
-description = "Add your description here"
+description = "Corona Network Standard Ontology and Validation Tool"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10" # Match other projects
+license = { text = "MIT" } # Assuming MIT, add if needed
+authors = [
+    { name = "ACE IoT" }, # Assuming ACE IoT, add if needed
+]
 dependencies = [
     "click>=8.1.8",
-    "pydantic>=2.11.4",
+    "pydantic>=2.11.4", # Keep if needed for models, otherwise remove
+    "pyshacl>=0.30.1",
     "rdflib>=7.1.4",
+    "importlib-resources>=6.0.0", # Needed for accessing package data
 ]
 
-[dependency-groups]
+[project.scripts]
+corona-network-tool = "corona_network_standard.main:cli"
+
+[project.optional-dependencies] # Changed from [dependency-groups]
 dev = [
+    "mypy>=1.15.0",
     "ruff>=0.11.8",
+    "pytest>=7.4.2", # Add pytest for testing
+    "pytest-cov>=4.1.0", # Add pytest-cov for coverage
+    "black>=25.1.0", # Add black for formatting
+    "isort>=6.0.1", # Add isort for import sorting
 ]
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options] # Add basic test config
+testpaths = ["tests"]
+python_files = "test_*.py"
+pythonpath = [".", "src"]
+
+[tool.mypy] # Add basic mypy config
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+# Add namespace_packages = true if using namespace packages
+# Add check_untyped_defs = true for stricter checking if desired
+
+[tool.ruff] # Add basic ruff config
+line-length = 100
+target-version = "py310"
+[tool.ruff.lint]
+select = ["E", "F", "UP", "I", "N", "W", "C90"]
+ignore = ["E203", "E501"] # Ignore common conflicts/preferences
+
+[tool.ruff.lint.isort] # Add basic isort config
+known-first-party = ["corona_network_standard"]

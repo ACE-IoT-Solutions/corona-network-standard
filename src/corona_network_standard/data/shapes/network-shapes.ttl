@@ -1,0 +1,178 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix net: <http://www.example.org/network-ontology#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# Shape for VLAN class
+net:VLANShape
+    a sh:NodeShape ;
+    sh:targetClass net:VLAN ;
+    sh:property [
+        sh:path net:vlanId ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "VLAN ID" ;
+        sh:description "The unique identifier for the VLAN." ;
+    ] ;
+    sh:property [
+        sh:path net:vlanName ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "VLAN Name" ;
+        sh:description "The descriptive name for the VLAN." ;
+    ] .
+
+# Shape for Node class (superclass for Host, Router, Switch)
+net:NodeShape
+    a sh:NodeShape ;
+    sh:targetClass net:Node ;
+    sh:property [
+        sh:path net:HWStatus ;
+        sh:datatype xsd:string ; # Could be refined with sh:in if specific statuses exist
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Hardware Status" ;
+    ] ;
+    sh:property [
+        sh:path net:HasIFace ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Iface ; # Ensures the value is an Iface instance
+        sh:name "Has Interface" ;
+    ] ;
+    sh:property [
+        sh:path net:HasNeighbor ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Node ; # Ensures the value is a Node instance
+        sh:name "Has Neighbor" ;
+    ] .
+
+# Shape for Iface (Interface) class
+net:IfaceShape
+    a sh:NodeShape ;
+    sh:targetClass net:Iface ;
+    sh:property [
+        sh:path net:BelongsToNode ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Node ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Belongs to Node" ;
+    ] ;
+    sh:property [
+        sh:path net:HWStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Hardware Status" ;
+    ] ;
+     sh:property [
+        sh:path net:portMode ;
+        sh:datatype xsd:string ; # Could be refined with sh:in
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Port Mode" ;
+    ] ;
+    sh:property [
+        sh:path net:Address ;
+        sh:datatype xsd:string ; # Could use sh:pattern for IP validation
+        sh:maxCount 1 ;
+        sh:name "IP Address" ;
+    ] ;
+    sh:property [
+        sh:path net:ConnectedToLink ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Link ;
+        sh:maxCount 1 ;
+        sh:name "Connected to Link" ;
+    ] ;
+    sh:property [
+        sh:path net:accessVlan ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:VLAN ;
+        sh:maxCount 1 ; # Assuming an access port belongs to one VLAN
+        sh:name "Access VLAN" ;
+    ] ;
+     sh:property [
+        sh:path net:allowedVlan ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:VLAN ;
+        sh:name "Allowed VLAN" ; # For trunk ports
+    ] .
+
+
+# Shape for Link class
+net:LinkShape
+    a sh:NodeShape ;
+    sh:targetClass net:Link ;
+    sh:property [
+        sh:path net:HWStatus ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Hardware Status" ;
+    ] ;
+    sh:property [
+        sh:path net:Technology ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:name "Technology" ;
+    ] ;
+    sh:property [
+        sh:path net:hasInterface ;
+        sh:nodeKind sh:IRI ;
+        sh:class net:Iface ;
+        sh:minCount 2 ; # A link connects at least two interfaces
+        sh:name "Has Interface" ;
+    ] .
+
+# Ensure Iface.ConnectedToLink points back to a Link that has the Iface (using SPARQL)
+net:IfaceLinkConsistencySPARQLShape
+    a sh:NodeShape ;
+    sh:targetClass net:Iface ;
+    sh:sparql [
+        sh:message "If an Iface ($this) is ConnectedToLink ?link, then ?link must have $this in its net:hasInterface property." ;
+        sh:select """
+            SELECT $this ?link
+            WHERE {
+                $this net:ConnectedToLink ?link .
+                FILTER NOT EXISTS {
+                    ?link net:hasInterface $this .
+                }
+            }
+            """ ;
+    ] .
+
+# Ensure Node.HasIFace points back to an Iface that belongs to the Node (using SPARQL)
+net:NodeIfaceConsistencySPARQLShape
+    a sh:NodeShape ;
+    sh:targetClass net:Node ;
+    sh:sparql [
+        sh:message "If a Node ($this) HasIFace ?iface, then ?iface must have $this in its net:BelongsToNode property." ;
+        sh:select """
+            SELECT $this ?iface
+            WHERE {
+                $this net:HasIFace ?iface .
+                FILTER NOT EXISTS {
+                    ?iface net:BelongsToNode $this .
+                }
+            }
+            """ ;
+    ] .
+
+# Ensure Node.HasNeighbor points back to a Node that has the original Node as a neighbor (optional, assumes symmetric neighbor relationship)
+# net:NodeNeighborConsistencyShape
+#     a sh:NodeShape ;
+#     sh:targetClass net:Node ;
+#     sh:property [
+#         sh:path net:HasNeighbor ;
+#         sh:qualifiedValueShape [
+#             sh:path net:HasNeighbor ;
+#             sh:hasValue $this ; # $this refers to the target Node node
+#         ] ;
+#         sh:qualifiedMinCount 1 ;
+#         sh:message "If Node A HasNeighbor Node B, Node B must list Node A in its HasNeighbor property (if relationship is symmetric)." ;
+#     ] .
+

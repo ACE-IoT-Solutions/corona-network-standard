@@ -1,10 +1,15 @@
 import click
 from rdflib import Graph, Literal, Namespace
 from rdflib.namespace import RDF, RDFS
+import importlib.resources
+import sys
 
 # Updated import for Pydantic V2 validator
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import List, Optional, Literal as PydanticLiteral
+
+# Import pyshacl
+from pyshacl import validate
 
 # Define Namespaces
 NETWORK = Namespace("http://www.example.org/network-ontology#")
@@ -58,11 +63,14 @@ class VLAN(LogicalEntity):
 
 
 class Iface(HWNetEntity):
+    model_config = ConfigDict(
+        populate_by_name=True # Ensure aliases are used during validation
+    )
     address: Optional[str] = Field(default=None, alias="Address")
     connected_to_link_id: Optional[str] = Field(default=None, alias="ConnectedToLink")
     belongs_to_node_id: Optional[str] = Field(default=None, alias="BelongsToNode")
 
-    # Layer 2 Additions
+    # Layer 2 Additions - Restore aliases
     port_mode: PydanticLiteral["ACCESS", "TRUNK", "UNCONFIGURED"] = Field(
         default="UNCONFIGURED", alias="portMode"
     )
@@ -73,9 +81,10 @@ class Iface(HWNetEntity):
         default_factory=list, alias="allowedVlan"
     )  # List of VLAN IDs if mode is TRUNK
 
-    # --- Pydantic V2 Model Validator ---
+    # --- Pydantic V2 Model Validator (cleaned up) ---
     @model_validator(mode="after")
     def check_vlan_mode_consistency(self) -> "Iface":
+        # ... validator logic remains the same ...
         mode = self.port_mode
         access_vlan = self.access_vlan_id
         allowed_vlans = self.allowed_vlan_ids
@@ -113,7 +122,6 @@ class Iface(HWNetEntity):
 
     def to_rdf(self, g: Graph):
         iface_uri = super().to_rdf(g)
-        print(iface_uri)
         if self.address:
             g.add((iface_uri, NETWORK.Address, Literal(self.address)))
         if self.connected_to_link_id:
@@ -124,6 +132,7 @@ class Iface(HWNetEntity):
             node_uri = EX[self.belongs_to_node_id]
             g.add((iface_uri, NETWORK.BelongsToNode, node_uri))
 
+        # Use aliases (via model_config) when adding triples
         g.add((iface_uri, NETWORK.portMode, Literal(self.port_mode)))
         if self.port_mode == "ACCESS" and self.access_vlan_id is not None:
             vlan_uri = EX[f"VLAN{self.access_vlan_id}"]
@@ -186,104 +195,117 @@ class Switch(Node):
     pass
 
 
-# --- Example Network Construction (Extended) ---
+# --- Helper function to get package data path ---
+def get_resource_path(package: str, resource: str) -> str:
+    """Gets the path to a resource within the package."""
+    try:
+        # Use files() for modern Python (returns Traversable)
+        # The path needs to be resolved within the context manager
+        with importlib.resources.files(package) as package_path:
+            resource_path = package_path / resource
+            if resource_path.is_file():
+                # Ensure the path is resolved to a string before exiting the context
+                resolved_path = str(resource_path.resolve())
+                return resolved_path
+            else:
+                raise FileNotFoundError(f"Resource not found or not a file: {resource} in {package}")
+    except (ImportError, AttributeError, FileNotFoundError, TypeError) as e:
+        # Fallback for older Python or if files() fails
+        click.echo(f"Using fallback importlib.resources.path due to error: {e}", err=True)
+        try:
+            with importlib.resources.path(package, resource) as p:
+                 return str(p)
+        except Exception as fallback_e:
+            click.echo(f"Error finding resource {resource} in package {package} using fallback: {fallback_e}", err=True)
+            sys.exit(1)
 
-# VLANs
-vlan10 = VLAN(id="VLAN10_obj", vlan_id=10, name="Users")
-vlan20 = VLAN(id="VLAN20_obj", vlan_id=20, name="Servers")
-vlan99 = VLAN(id="VLAN99_obj", vlan_id=99, name="Management")
+# --- Click CLI Group ---
+@click.group()
+def cli():
+    """Corona Network Standard Tool: Generate and Validate Network RDF Data."""
+    pass
 
-# Devices
-router1 = Router(id="Router1", HasIFace=["R1_Eth0"])
-switch1 = Switch(id="Switch1", HasIFace=["Sw1_Fa0-1", "Sw1_Fa0-2", "Sw1_Gi0-1"])
-host1 = Host(id="Host1", HasIFace=["H1_Eth0"])
-
-# Interfaces
-iface_r1_eth0 = Iface(
-    id="R1_Eth0",
-    Address="10.0.0.1",
-    BelongsToNode="Router1",
-    ConnectedToLink="Link_R1_Sw1",
-    port_mode="UNCONFIGURED",
-)
-iface_sw1_fa0_1 = Iface(
-    id="Sw1_Fa0-1",
-    BelongsToNode="Switch1",
-    ConnectedToLink="Link_Sw1_H1",
-    port_mode="ACCESS",
-    access_vlan_id=10,
-)
-iface_sw1_fa0_2 = Iface(
-    id="Sw1_Fa0-2", BelongsToNode="Switch1", port_mode="ACCESS", access_vlan_id=20
-)
-iface_sw1_gi0_1 = Iface(
-    id="Sw1_Gi0-1",
-    BelongsToNode="Switch1",
-    ConnectedToLink="Link_R1_Sw1",
-    port_mode="TRUNK",
-    allowed_vlan_ids=[10, 20, 99],
-)
-iface_h1_eth0 = Iface(
-    id="H1_Eth0",
-    Address="10.0.10.50",
-    BelongsToNode="Host1",
-    ConnectedToLink="Link_Sw1_H1",
-)
-
-# --- Example of Validation Error ---
-try:
-    # This interface tries to set allowed_vlan_ids in ACCESS mode, which should fail
-    invalid_iface = Iface(
-        id="Invalid_Iface",
-        BelongsToNode="Switch1",
-        port_mode="ACCESS",
-        access_vlan_id=10,
-        allowed_vlan_ids=[20],  # This is invalid for ACCESS mode
-    )
-    print("!!! WARNING: Invalid interface configuration was somehow allowed.")
-except ValueError as e:
-    print("--- Validation Test Passed ---")
-    print(f"Caught expected validation error: {e}")
-    print("-----------------------------\n")
-# --- End Validation Error Example ---
-
-
-# Links
-link_r1_sw1 = Link(
-    id="Link_R1_Sw1", Technology="Ethernet", interface_ids=["R1_Eth0", "Sw1_Gi0-1"]
-)
-link_sw1_h1 = Link(
-    id="Link_Sw1_H1", Technology="Ethernet", interface_ids=["Sw1_Fa0-1", "H1_Eth0"]
-)
-
-# Update neighbor relationships (Physical Neighbors based on Links)
-router1.has_neighbor_ids = ["Switch1"]
-switch1.has_neighbor_ids = ["Router1", "Host1"]
-host1.has_neighbor_ids = ["Switch1"]
-
-# List of all entities to add to the graph (valid ones)
-entities: List[BaseEntity] = [
-    vlan10,
-    vlan20,
-    vlan99,
-    router1,
-    switch1,
-    host1,
-    iface_r1_eth0,
-    iface_sw1_fa0_1,
-    iface_sw1_fa0_2,
-    iface_sw1_gi0_1,
-    iface_h1_eth0,
-    link_r1_sw1,
-    link_sw1_h1,
-]
-
-# --- RDF Generation ---
-
-@click.command()
+# --- Generate Command ---
+@cli.command(name="generate")
 @click.option('--output-file', '-o', default=None, help='Path to the output RDF file (Turtle format). If not provided, prints to stdout.')
 def generate_network_rdf(output_file):
     """Generates an RDF graph representing the network topology."""
+
+    # --- Example Network Construction (Moved inside the function) ---
+
+    # VLANs
+    vlan10 = VLAN(id="VLAN10_obj", vlan_id=10, name="Users")
+    vlan20 = VLAN(id="VLAN20_obj", vlan_id=20, name="Servers")
+    vlan99 = VLAN(id="VLAN99_obj", vlan_id=99, name="Management")
+
+    # Devices
+    router1 = Router(id="Router1", HasIFace=["R1_Eth0"])
+    switch1 = Switch(id="Switch1", HasIFace=["Sw1_Fa0-1", "Sw1_Fa0-2", "Sw1_Gi0-1"])
+    host1 = Host(id="Host1", HasIFace=["H1_Eth0"])
+
+    # Interfaces
+    iface_r1_eth0 = Iface(
+        id="R1_Eth0",
+        Address="10.0.0.1",
+        BelongsToNode="Router1",
+        ConnectedToLink="Link_R1_Sw1",
+        port_mode="UNCONFIGURED",
+    )
+    iface_sw1_fa0_1 = Iface(
+        id="Sw1_Fa0-1",
+        BelongsToNode="Switch1",
+        ConnectedToLink="Link_Sw1_H1",
+        port_mode="ACCESS",
+        access_vlan_id=10,
+    )
+    iface_sw1_fa0_2 = Iface(
+        id="Sw1_Fa0-2", BelongsToNode="Switch1", port_mode="ACCESS", access_vlan_id=20
+    )
+    iface_sw1_gi0_1 = Iface(
+        id="Sw1_Gi0-1",
+        BelongsToNode="Switch1",
+        ConnectedToLink="Link_R1_Sw1",
+        port_mode="TRUNK",
+        allowed_vlan_ids=[10, 20, 99],
+    )
+    iface_h1_eth0 = Iface(
+        id="H1_Eth0",
+        Address="10.0.10.50",
+        BelongsToNode="Host1",
+        ConnectedToLink="Link_Sw1_H1",
+    )
+
+    # Links
+    link_r1_sw1 = Link(
+        id="Link_R1_Sw1", Technology="Ethernet", interface_ids=["R1_Eth0", "Sw1_Gi0-1"]
+    )
+    link_sw1_h1 = Link(
+        id="Link_Sw1_H1", Technology="Ethernet", interface_ids=["Sw1_Fa0-1", "H1_Eth0"]
+    )
+
+    # Update neighbor relationships (Physical Neighbors based on Links)
+    router1.has_neighbor_ids = ["Switch1"]
+    switch1.has_neighbor_ids = ["Router1", "Host1"]
+    host1.has_neighbor_ids = ["Switch1"]
+
+    # List of all entities to add to the graph (valid ones)
+    entities: List[BaseEntity] = [
+        vlan10,
+        vlan20,
+        vlan99,
+        router1,
+        switch1,
+        host1,
+        iface_r1_eth0,
+        iface_sw1_fa0_1,
+        iface_sw1_fa0_2,
+        iface_sw1_gi0_1,
+        iface_h1_eth0,
+        link_r1_sw1,
+        link_sw1_h1,
+    ]
+    # --- End Example Network Construction ---
+
     # Create an RDF graph
     g = Graph()
 
@@ -293,9 +315,7 @@ def generate_network_rdf(output_file):
     g.bind("rdfs", RDFS)
     g.bind("rdf", RDF)
 
-
     # --- Define Ontology Structure in RDF ---
-    # (Same definitions as before)
     # Classes
     g.add((NETWORK.NetEntity, RDFS.subClassOf, RDFS.Resource))
     g.add((NETWORK.HWNetEntity, RDFS.subClassOf, NETWORK.NetEntity))
@@ -332,14 +352,13 @@ def generate_network_rdf(output_file):
     g.add((NETWORK.vlanId, RDF.type, RDF.Property))
     g.add((NETWORK.vlanName, RDF.type, RDF.Property))
 
-
     # --- Populate Graph ---
     for entity in entities:
         try:
             entity.to_rdf(g)
         except Exception as e:
-            print(f"Error processing entity {entity.id}: {e}")
-
+            # Use click.echo for consistency and stderr for errors
+            click.echo(f"Error processing entity {entity.id}: {e}", file=sys.stderr)
 
     # --- Output ---
     rdf_output = g.serialize(format="turtle")
@@ -347,16 +366,75 @@ def generate_network_rdf(output_file):
     if output_file:
         with open(output_file, "w") as f:
             f.write(rdf_output)
-        print(f"--- RDF Graph saved to {output_file} ---")
+        click.echo(f"--- RDF Graph saved to {output_file} ---")
     else:
-        print("--- RDF Graph (Turtle) ---")
-        print(rdf_output)
+        click.echo("--- RDF Graph (Turtle) ---")
+        click.echo(rdf_output)
 
-    print("\n--- Notes ---")
-    print("1. Updated Iface class validators to Pydantic V2 model_validator syntax.")
-    print("2. Added a test case to show validation catching invalid configuration.")
-    print("3. The example network remains the same.")
-    print(f"4. Output handled via click. Output file: {output_file if output_file else 'stdout'}")
+    click.echo("\n--- Generation Complete ---")
+
+# --- Validate Command ---
+@cli.command(name="validate")
+@click.argument('data-graph-file', type=click.Path(exists=True, dir_okay=False))
+@click.option('--shapes-file', '-s', default=None, help='Path to the SHACL shapes file (Turtle format). Defaults to the packaged shapes file.')
+@click.option('--ontology-file', '-t', default=None, help='Path to the ontology file (Turtle format). Defaults to the packaged ontology file.')
+def validate_network_rdf(data_graph_file, shapes_file, ontology_file):
+    """Validates a network RDF data graph against SHACL shapes."""
+
+    # Determine shapes file path
+    if shapes_file:
+        shacl_graph_path = shapes_file
+    else:
+        shacl_graph_path = get_resource_path("corona_network_standard.data.shapes", "network-shapes.ttl")
+        click.echo(f"Using packaged shapes file: {shacl_graph_path}")
+
+    # Determine ontology file path (optional, for inference)
+    ont_graph_path = None
+    if ontology_file:
+        ont_graph_path = ontology_file
+    else:
+        # Optionally load the packaged ontology for inference
+        try:
+            ont_graph_path = get_resource_path("corona_network_standard.data.ontology", "network-ontology.ttl")
+            click.echo(f"Using packaged ontology file for inference: {ont_graph_path}")
+        except FileNotFoundError:
+            click.echo("Packaged ontology file not found, proceeding without ontology inference.")
+            ont_graph_path = None
+
+    click.echo(f"Validating data graph: {data_graph_file}")
+
+    try:
+        # Load graphs
+        data_graph = Graph().parse(data_graph_file, format="turtle")
+        shacl_graph = Graph().parse(shacl_graph_path, format="turtle")
+        ont_graph = Graph().parse(ont_graph_path, format="turtle") if ont_graph_path else None
+
+        # Perform validation
+        conforms, results_graph, results_text = validate(
+            data_graph,
+            shacl_graph=shacl_graph,
+            ont_graph=ont_graph,  # Pass ontology graph for potential inference
+            meta_shacl=False,
+            advanced=True,
+            js=False, # Set to True if using SHACL-JS extensions
+            debug=False,
+            inference='rdfs' if ont_graph else 'none' # Use RDFS inference if ontology provided
+        )
+
+        # Print results
+        click.echo("\n--- Validation Results ---")
+        if conforms:
+            click.secho("Data graph conforms to the SHACL shapes.", fg="green")
+        else:
+            click.secho("Data graph does NOT conform to the SHACL shapes.", fg="red")
+            click.echo("Validation Report:")
+            click.echo(results_text)
+            sys.exit(1) # Exit with error code if validation fails
+
+    except Exception as e:
+        click.secho(f"Error during validation: {e}", fg="red")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
-    generate_network_rdf()
+    cli()
