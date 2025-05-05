@@ -37,6 +37,6 @@ jobs:
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       with:
-        token: ${{ secrets.CODECOV_TOKEN }} # Optional: Add if repo is private
+        # token: ${{ secrets.CODECOV_TOKEN }} # Optional: Add if repo is private
         slug: acedrew/corona-network-standard # Explicitly set repo slug
         fail_ci_if_error: true # Optional: Fail CI if Codecov upload fails
