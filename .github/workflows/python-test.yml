@@ -27,10 +27,8 @@ jobs:
 
     - name: Install dependencies with uv
       run: |
-        # Add uv to the PATH
-        export PATH="$HOME/.cargo/bin:$PATH"
-        # Install project with dev dependencies (pytest, pytest-cov) using uv
-        uv pip install -e .[dev]
+        uv venv
+        uv sync
 
     - name: Run tests with coverage
       run: |
