@@ -32,9 +32,6 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        # Add uv to the PATH for pytest execution if needed (might not be necessary if pytest is found)
-        export PATH="$HOME/.cargo/bin:$PATH"
-        # Run pytest, generate coverage report for the main package
         pytest --cov=src/corona_network_standard --cov-report=xml
 
     - name: Upload coverage reports to Codecov
