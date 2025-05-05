@@ -39,4 +39,4 @@ jobs:
       with:
         # token: ${{ secrets.CODECOV_TOKEN }} # Optional: Add if repo is private
         slug: ACE-IoT-Solutions/corona-network-standard # Explicitly set repo slug
-        fail_ci_if_error: true # Optional: Fail CI if Codecov upload fails
+        fail_ci_if_error: false # Optional: Fail CI if Codecov upload fails
