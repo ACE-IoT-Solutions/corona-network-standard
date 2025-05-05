@@ -1,7 +1,7 @@
 # Pydantic to RDF Network Ontology Mapper
 
-[![Python Tests & Coverage](https://github.com/acedrew/corona-network-standard/actions/workflows/python-test.yml/badge.svg)](https://github.com/acedrew/corona-network-standard/actions/workflows/python-test.yml)
-[![codecov](https://codecov.io/gh/acedrew/corona-network-standard/graph/badge.svg?token=YOUR_CODECOV_TOKEN_HERE)](https://codecov.io/gh/acedrew/corona-network-standard) 
+[![Python Tests & Coverage](https://github.com/ACE-IoT-Solutions/corona-network-standard/actions/workflows/python-test.yml/badge.svg)](https://github.com/ACE-IoT-Solutions/corona-network-standard/actions/workflows/python-test.yml)
+[![codecov](https://codecov.io/gh/ACE-IoT-Solutions/corona-network-standard/graph/badge.svg)](https://codecov.io/gh/ACE-IoT-Solutions/corona-network-standard) 
 <!-- TODO: Replace YOUR_CODECOV_TOKEN_HERE in the badge URL if your repo is private and requires tokens for badges -->
 
 ## Description
