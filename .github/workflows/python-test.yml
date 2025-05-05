@@ -35,8 +35,8 @@ jobs:
         uv run pytest --cov=src/corona_network_standard --cov-report=xml
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         # token: ${{ secrets.CODECOV_TOKEN }} # Optional: Add if repo is private
-        slug: acedrew/corona-network-standard # Explicitly set repo slug
+        slug: ACE-IoT-Solutions/corona-network-standard # Explicitly set repo slug
         fail_ci_if_error: true # Optional: Fail CI if Codecov upload fails
