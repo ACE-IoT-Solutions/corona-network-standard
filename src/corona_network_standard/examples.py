@@ -41,88 +41,117 @@ def create_example_network() -> List[BaseEntity]:
     subnet_transit = Subnet(id="Subnet_10.0.0.0_30", cidr="10.0.0.0/30", description="Transit link between R1 and Sw1")  # Link subnet
 
     # VLANs - now linked to subnets
-    vlan10 = VLAN(id="VLAN10_obj", vlan_id=10, name="Users", hasSubnet=[subnet10.id], description="VLAN for general user access")
-    vlan20 = VLAN(id="VLAN20_obj", vlan_id=20, name="Servers", hasSubnet=[subnet20.id], description="VLAN for server infrastructure")
-    vlan99 = VLAN(id="VLAN99_obj", vlan_id=99, name="Management", hasSubnet=[subnet99.id], description="VLAN for network device management")
+    # Pass the actual Subnet objects, not just their IDs
+    vlan10 = VLAN(id="VLAN10_obj", vlan_id=10, name="Users", hasSubnet=[subnet10], description="VLAN for general user access")
+    vlan20 = VLAN(id="VLAN20_obj", vlan_id=20, name="Servers", hasSubnet=[subnet20], description="VLAN for server infrastructure")
+    vlan99 = VLAN(id="VLAN99_obj", vlan_id=99, name="Management", hasSubnet=[subnet99], description="VLAN for network device management")
 
     # Address Assignments - Corrected argument names: ipValue -> ip_value, onSubnet -> on_subnet_id
+    # Pass the actual Subnet object to the on_subnet field
     assign_r1_eth0 = AddressAssignment(
         id="Assign_R1_Eth0_10.0.0.1",
         ip_value="10.0.0.1",
-        on_subnet_id=subnet_transit.id,  # Link to Subnet ID
+        on_subnet=subnet_transit,  # Pass the Subnet object
         description="IP address for Router1's interface on the transit link"
     )
     assign_h1_eth0 = AddressAssignment(
         id="Assign_H1_Eth0_10.0.10.50",
         ip_value="10.0.10.50",
-        on_subnet_id=subnet10.id,  # Link to Subnet ID
+        on_subnet=subnet10,  # Pass the Subnet object
     )
     # Example assignment for a server (not fully defined host)
     assign_server_eth0 = AddressAssignment(
         id="Assign_Server_Eth0_10.0.20.100",
         ip_value="10.0.20.100",
-        on_subnet_id=subnet20.id,  # Link to Subnet ID
+        on_subnet=subnet20,  # Pass the Subnet object
     )
 
     # Devices
+    # Pass the actual Iface, Subnet, and Node objects instead of IDs
     router1 = Router(
         id="Router1",
-        HasIFace=["R1_Eth0"],
-        routesSubnet=[subnet10.id, subnet20.id, subnet99.id, subnet_transit.id],
+        HasIFace=[],  # Will be updated later
+        routesSubnet=[subnet10, subnet20, subnet99, subnet_transit],  # Pass Subnet objects
         description="Main campus router"
     )
-    switch1 = Switch(id="Switch1", HasIFace=["Sw1_Fa0-1", "Sw1_Fa0-2", "Sw1_Gi0-1"], description="Access layer switch 1")
-    host1 = Host(id="Host1", HasIFace=["H1_Eth0"], description="Example user workstation")
+    switch1 = Switch(
+        id="Switch1",
+        HasIFace=[],  # Will be updated later
+        description="Access layer switch 1"
+    )
+    host1 = Host(
+        id="Host1",
+        HasIFace=[],  # Will be updated later
+        description="Example user workstation"
+    )
 
     # Interfaces - Address field removed, hasAddressAssignment added (linking to Assignment object)
+    # Link interfaces back to their parent Node objects and VLAN objects
     iface_r1_eth0 = Iface(
         id="R1_Eth0",
-        BelongsToNode="Router1",
-        ConnectedToLink="Link_R1_Sw1",
+        BelongsToNode=router1,  # Pass Node object
+        ConnectedToLink=None,  # Will be updated later
         port_mode="UNCONFIGURED",
-        hasAddressAssignment=[assign_r1_eth0],  # Pass the Assignment object
+        hasAddressAssignment=[assign_r1_eth0],
         description="Router1 Ethernet0 - Connects to Switch1 Gi0/1"
     )
     iface_sw1_fa0_1 = Iface(
         id="Sw1_Fa0-1",
-        BelongsToNode="Switch1",
-        ConnectedToLink="Link_Sw1_H1",
+        BelongsToNode=switch1,  # Pass Node object
+        ConnectedToLink=None,  # Will be updated later
         port_mode="ACCESS",
-        access_vlan_id=10,
+        access_vlan=vlan10,  # Pass VLAN object directly
     )
     iface_sw1_fa0_2 = Iface(
         id="Sw1_Fa0-2",
-        BelongsToNode="Switch1",
+        BelongsToNode=switch1,  # Pass Node object
         port_mode="ACCESS",
-        access_vlan_id=20,
+        access_vlan=vlan20,  # Pass VLAN object directly
     )
     iface_sw1_gi0_1 = Iface(
         id="Sw1_Gi0-1",
-        BelongsToNode="Switch1",
-        ConnectedToLink="Link_R1_Sw1",
+        BelongsToNode=switch1,  # Pass Node object
+        ConnectedToLink=None,  # Will be updated later
         port_mode="TRUNK",
-        allowed_vlan_ids=[10, 20, 99],
+        allowed_vlans=[vlan10, vlan20, vlan99],  # Pass list of VLAN objects
     )
     iface_h1_eth0 = Iface(
         id="H1_Eth0",
-        BelongsToNode="Host1",
-        ConnectedToLink="Link_Sw1_H1",
-        hasAddressAssignment=[assign_h1_eth0],  # Pass the Assignment object
+        BelongsToNode=host1,  # Pass Node object
+        ConnectedToLink=None,  # Will be updated later
+        hasAddressAssignment=[assign_h1_eth0],
         port_mode="UNCONFIGURED",
     )
 
+    # Update devices with their interfaces
+    router1.has_ifaces = [iface_r1_eth0]
+    switch1.has_ifaces = [iface_sw1_fa0_1, iface_sw1_fa0_2, iface_sw1_gi0_1]
+    host1.has_ifaces = [iface_h1_eth0]
+
     # Links
+    # Pass the actual Iface objects instead of IDs
     link_r1_sw1 = Link(
-        id="Link_R1_Sw1", Technology="Ethernet", interface_ids=["R1_Eth0", "Sw1_Gi0-1"]
+        id="Link_R1_Sw1",
+        Technology="Ethernet",
+        interfaces=[iface_r1_eth0, iface_sw1_gi0_1]  # Pass Iface objects
     )
     link_sw1_h1 = Link(
-        id="Link_Sw1_H1", Technology="Ethernet", interface_ids=["Sw1_Fa0-1", "H1_Eth0"]
+        id="Link_Sw1_H1",
+        Technology="Ethernet",
+        interfaces=[iface_sw1_fa0_1, iface_h1_eth0]  # Pass Iface objects
     )
 
     # Update neighbor relationships (Physical Neighbors based on Links)
-    router1.has_neighbor_ids = ["Switch1"]
-    switch1.has_neighbor_ids = ["Router1", "Host1"]
-    host1.has_neighbor_ids = ["Switch1"]
+    # Pass the actual Node objects instead of IDs
+    router1.has_neighbors = [switch1]
+    switch1.has_neighbors = [router1, host1]
+    host1.has_neighbors = [switch1]
+
+    # Update interfaces with Link objects
+    iface_r1_eth0.connected_to_link = link_r1_sw1
+    iface_sw1_gi0_1.connected_to_link = link_r1_sw1
+    iface_sw1_fa0_1.connected_to_link = link_sw1_h1
+    iface_h1_eth0.connected_to_link = link_sw1_h1
 
     # List of all entities to add to the graph (valid ones)
     entities: List[BaseEntity] = [
