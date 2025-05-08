@@ -8,6 +8,8 @@
 
 This project provides a Python script (`main.py`) that demonstrates how to model computer network components and their relationships using Pydantic classes, based on concepts from a network management ontology. It then uses the RDFLib library to translate instances of these Pydantic models into an RDF graph, representing a sample network topology including Layer 1, Layer 2 (Switches, VLANs), and basic Layer 3 elements.
 
+This project is intended to provide additional context and a reference ontology for network architecture to support the [Corona Framework](https://github.com/ACE-IoT-Solutions/corona-framework) which provides an interoperable model for OT Network Performance Metrics.
+
 The ontology concepts are primarily inspired by the work described in the paper referenced below.
 
 ## Based On
