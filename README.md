@@ -1,4 +1,4 @@
-# Pydantic to RDF Network Ontology Mapper
+# Ontology for OT Network Architecture
 
 [![Python Tests & Coverage](https://github.com/ACE-IoT-Solutions/corona-network-standard/actions/workflows/python-test.yml/badge.svg)](https://github.com/ACE-IoT-Solutions/corona-network-standard/actions/workflows/python-test.yml)
 [![codecov](https://codecov.io/gh/ACE-IoT-Solutions/corona-network-standard/graph/badge.svg)](https://codecov.io/gh/ACE-IoT-Solutions/corona-network-standard) 
