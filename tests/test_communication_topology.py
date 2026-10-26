@@ -19,9 +19,11 @@ def topology_graph() -> Graph:
         ex:client_read a net:MessageObservation ; net:direction "sent" ;
             net:messageType "function_3_request" ; net:count 2 .
         ex:gateway a net:ModbusTcpGateway ; net:address "192.0.2.2" ;
-            net:HWStatus "UNKNOWN" ; net:routesTo ex:unit .
+            net:HWStatus "UNKNOWN" ; net:routesTo ex:unit ;
+            net:sentMessageCount 0 ; net:receivedMessageCount 2 .
         ex:unit a net:ModbusRtuUnit ; net:address "192.0.2.2/unit/7" ;
-            net:HWStatus "UNKNOWN" .
+            net:HWStatus "UNKNOWN" ; net:sentMessageCount 0 ;
+            net:receivedMessageCount 2 .
         ex:edge a net:CommunicationEdge ; net:sourceDevice ex:client ;
             net:destinationDevice ex:unit ; net:protocol "modbus" ;
             net:messageCount 2 ; net:hasMessageObservation ex:read .
@@ -59,4 +61,14 @@ def test_device_requires_received_count() -> None:
     net = Namespace("http://www.example.org/network-ontology#")
     ex = Namespace("http://example.org/test/")
     graph.remove((ex.client, net.receivedMessageCount, None))
+    assert not conforms(graph)
+
+
+def test_gateway_requires_received_count_without_message_observations() -> None:
+    graph = topology_graph()
+    from rdflib import Namespace
+
+    net = Namespace("http://www.example.org/network-ontology#")
+    ex = Namespace("http://example.org/test/")
+    graph.remove((ex.gateway, net.receivedMessageCount, None))
     assert not conforms(graph)

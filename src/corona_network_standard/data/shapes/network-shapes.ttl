@@ -180,6 +180,8 @@ net:MessageObservationShape
 
 net:NodeTrafficShape
     a sh:NodeShape ;
+    sh:targetSubjectsOf net:sentMessageCount ;
+    sh:targetSubjectsOf net:receivedMessageCount ;
     sh:targetSubjectsOf net:hasNodeMessageObservation ;
     sh:property [ sh:path net:sentMessageCount ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path net:receivedMessageCount ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] .
