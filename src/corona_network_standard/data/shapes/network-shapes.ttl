@@ -161,3 +161,19 @@ net:LinkShape
             }
             """ ;
     ] .
+
+# Observed traffic is a logical relation, not a physical net:Link.
+net:CommunicationEdgeShape
+    a sh:NodeShape ;
+    sh:targetClass net:CommunicationEdge ;
+    sh:property [ sh:path net:sourceDevice ; sh:nodeKind sh:IRI ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:destinationDevice ; sh:nodeKind sh:IRI ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:protocol ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:messageCount ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:hasMessageObservation ; sh:nodeKind sh:IRI ; sh:minCount 1 ] .
+
+net:MessageObservationShape
+    a sh:NodeShape ;
+    sh:targetClass net:MessageObservation ;
+    sh:property [ sh:path net:messageType ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:count ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] .

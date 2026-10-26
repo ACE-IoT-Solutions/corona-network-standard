@@ -41,6 +41,27 @@ net:Host rdfs:subClassOf net:Node ;
     rdfs:label "Host"@en ;
     rdfs:comment "An end-device on the network (e.g., computer, server)."@en .
 
+# Protocol nodes discovered from passive traffic. They identify logical
+# endpoints; a shared IP address does not merge BACnet and Modbus identities.
+net:BacnetDevice rdfs:subClassOf net:Node ;
+    rdfs:label "BACnet device"@en .
+
+net:BacnetRoutedDevice rdfs:subClassOf net:BacnetDevice ;
+    rdfs:label "Routed BACnet device"@en .
+
+net:ModbusTcpClient rdfs:subClassOf net:Node ;
+    rdfs:label "Modbus/TCP client"@en .
+
+net:ModbusTcpServer rdfs:subClassOf net:Node ;
+    rdfs:label "Modbus/TCP server"@en .
+
+net:ModbusTcpGateway rdfs:subClassOf net:ModbusTcpServer ;
+    rdfs:label "Modbus/TCP gateway"@en .
+
+net:ModbusRtuUnit rdfs:subClassOf net:Node ;
+    rdfs:label "Modbus downstream unit"@en ;
+    rdfs:comment "Addressable unit inferred from a significant Modbus/TCP Unit ID. Passive traffic alone does not prove the downstream physical medium is RTU."@en .
+
 # Subclasses of LogicalEntity
 net:VLAN rdfs:subClassOf net:LogicalEntity ;
     rdfs:label "VLAN"@en ;
@@ -54,9 +75,55 @@ net:AddressAssignment rdfs:subClassOf rdfs:Resource ; # Not strictly a NetEntity
     rdfs:label "Address Assignment"@en ;
     rdfs:comment "Represents the assignment of a specific IP address on a specific Subnet to an Interface."@en .
 
+net:BroadcastAddress rdfs:subClassOf net:LogicalEntity ;
+    rdfs:label "Broadcast address"@en .
+
+net:CommunicationEdge rdfs:subClassOf net:LogicalEntity ;
+    rdfs:label "Observed directed device communication"@en ;
+    rdfs:comment "An observed protocol conversation direction, not a physical network link or neighbor assertion."@en .
+
+net:MessageObservation rdfs:subClassOf net:LogicalEntity ;
+    rdfs:label "Message type count on a communication edge"@en .
+
 # --- Properties ---
 
 # Object Properties
+net:address a rdf:Property ;
+    rdfs:domain net:NetEntity ;
+    rdfs:range xsd:string .
+
+net:routesTo a rdf:Property ;
+    rdfs:domain net:ModbusTcpGateway ;
+    rdfs:range net:ModbusRtuUnit .
+
+net:sourceDevice a rdf:Property ;
+    rdfs:domain net:CommunicationEdge ;
+    rdfs:range net:NetEntity .
+
+net:destinationDevice a rdf:Property ;
+    rdfs:domain net:CommunicationEdge ;
+    rdfs:range net:NetEntity .
+
+net:protocol a rdf:Property ;
+    rdfs:domain net:CommunicationEdge ;
+    rdfs:range xsd:string .
+
+net:messageCount a rdf:Property ;
+    rdfs:domain net:CommunicationEdge ;
+    rdfs:range xsd:integer .
+
+net:hasMessageObservation a rdf:Property ;
+    rdfs:domain net:CommunicationEdge ;
+    rdfs:range net:MessageObservation .
+
+net:messageType a rdf:Property ;
+    rdfs:domain net:MessageObservation ;
+    rdfs:range xsd:string .
+
+net:count a rdf:Property ;
+    rdfs:domain net:MessageObservation ;
+    rdfs:range xsd:integer .
+
 net:BelongsToNode a rdf:Property ;
     rdfs:label "belongs to node"@en ;
     rdfs:comment "Relates an Interface to the Node it is part of."@en ;
