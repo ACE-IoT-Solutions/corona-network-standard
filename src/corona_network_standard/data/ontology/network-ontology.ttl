@@ -116,6 +116,22 @@ net:hasMessageObservation a rdf:Property ;
     rdfs:domain net:CommunicationEdge ;
     rdfs:range net:MessageObservation .
 
+net:sentMessageCount a rdf:Property ;
+    rdfs:domain net:Node ;
+    rdfs:range xsd:integer .
+
+net:receivedMessageCount a rdf:Property ;
+    rdfs:domain net:Node ;
+    rdfs:range xsd:integer .
+
+net:hasNodeMessageObservation a rdf:Property ;
+    rdfs:domain net:Node ;
+    rdfs:range net:MessageObservation .
+
+net:direction a rdf:Property ;
+    rdfs:domain net:MessageObservation ;
+    rdfs:range xsd:string .
+
 net:messageType a rdf:Property ;
     rdfs:domain net:MessageObservation ;
     rdfs:range xsd:string .

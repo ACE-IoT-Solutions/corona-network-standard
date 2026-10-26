@@ -149,6 +149,12 @@ one `net:messageType` and `net:count`. These traffic relations are distinct
 from physical `net:Link` and `net:HasNeighbor`; a packet capture cannot infer
 physical adjacency. The SHACL shapes validate edge and message counts.
 
+Each observed device node can also carry `net:sentMessageCount` and
+`net:receivedMessageCount`. `net:hasNodeMessageObservation` attaches its
+per-type counts, with `net:direction` set to `sent` or `received`. This lets
+collectors retain traffic metrics for receiving devices and for gateways,
+not only for conversation edges.
+
 `ot-pcap-processor file capture.pcap --corona network.ttl` emits this topology
 with stable, protocol-scoped endpoint URIs.
 

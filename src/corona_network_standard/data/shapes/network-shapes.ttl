@@ -177,3 +177,14 @@ net:MessageObservationShape
     sh:targetClass net:MessageObservation ;
     sh:property [ sh:path net:messageType ; sh:datatype xsd:string ; sh:minCount 1 ; sh:maxCount 1 ] ;
     sh:property [ sh:path net:count ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+net:NodeTrafficShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf net:hasNodeMessageObservation ;
+    sh:property [ sh:path net:sentMessageCount ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] ;
+    sh:property [ sh:path net:receivedMessageCount ; sh:datatype xsd:integer ; sh:minInclusive 0 ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+net:NodeMessageObservationShape
+    a sh:NodeShape ;
+    sh:targetObjectsOf net:hasNodeMessageObservation ;
+    sh:property [ sh:path net:direction ; sh:datatype xsd:string ; sh:in ("sent" "received") ; sh:minCount 1 ; sh:maxCount 1 ] .

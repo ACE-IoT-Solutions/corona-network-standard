@@ -13,7 +13,11 @@ def topology_graph() -> Graph:
         data="""
         @prefix net: <http://www.example.org/network-ontology#> .
         @prefix ex: <http://example.org/test/> .
-        ex:client a net:ModbusTcpClient ; net:address "192.0.2.1" ; net:HWStatus "UNKNOWN" .
+        ex:client a net:ModbusTcpClient ; net:address "192.0.2.1" ;
+            net:HWStatus "UNKNOWN" ; net:sentMessageCount 2 ;
+            net:receivedMessageCount 0 ; net:hasNodeMessageObservation ex:client_read .
+        ex:client_read a net:MessageObservation ; net:direction "sent" ;
+            net:messageType "function_3_request" ; net:count 2 .
         ex:gateway a net:ModbusTcpGateway ; net:address "192.0.2.2" ;
             net:HWStatus "UNKNOWN" ; net:routesTo ex:unit .
         ex:unit a net:ModbusRtuUnit ; net:address "192.0.2.2/unit/7" ;
@@ -45,4 +49,14 @@ def test_communication_edge_requires_message_count() -> None:
     net = Namespace("http://www.example.org/network-ontology#")
     ex = Namespace("http://example.org/test/")
     graph.remove((ex.edge, net.messageCount, None))
+    assert not conforms(graph)
+
+
+def test_device_requires_received_count() -> None:
+    graph = topology_graph()
+    from rdflib import Namespace
+
+    net = Namespace("http://www.example.org/network-ontology#")
+    ex = Namespace("http://example.org/test/")
+    graph.remove((ex.client, net.receivedMessageCount, None))
     assert not conforms(graph)
