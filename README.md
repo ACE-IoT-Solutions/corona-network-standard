@@ -129,6 +129,36 @@ The script currently models and generates RDF for the following main concepts:
 
 *(Note: `net:` corresponds to the namespace `http://www.example.org/network-ontology#` and `ex:` to `http://www.example.org/network-instance#` in the script).*
 
+## Passive communication topology
+
+The ontology also defines `net:BacnetDevice`, `net:BacnetRoutedDevice`,
+`net:ModbusTcpClient`, `net:ModbusTcpServer`, `net:ModbusTcpGateway`, and
+`net:ModbusRtuUnit` as addressable protocol nodes. `net:BroadcastAddress`
+represents a broadcast destination. A significant Modbus Unit ID (1–247)
+can identify a downstream unit through a gateway; Unit ID 255 is recommended
+for a directly addressed TCP server, and 0 may also address one. A passive
+capture cannot establish the downstream physical medium, so the RTU unit
+classification should be treated as an inference. See the
+[Modbus/TCP implementation guide](https://modbus.org/docs/Modbus_Messaging_Implementation_Guide_V1_0b.pdf).
+
+Use `net:routesTo` from a gateway to its downstream unit. Observed traffic
+uses a directed `net:CommunicationEdge` with `net:sourceDevice`,
+`net:destinationDevice`, `net:protocol`, and `net:messageCount`. Each
+`net:MessageObservation` attached through `net:hasMessageObservation` holds
+one `net:messageType` and `net:count`. These traffic relations are distinct
+from physical `net:Link` and `net:HasNeighbor`; a packet capture cannot infer
+physical adjacency. The SHACL shapes validate edge and message counts.
+
+Each observed device node can also carry `net:sentMessageCount` and
+`net:receivedMessageCount`. Nodes reporting traffic must carry both totals,
+including zero counts. `net:hasNodeMessageObservation` attaches its
+per-type counts, with `net:direction` set to `sent` or `received`. This lets
+collectors retain traffic metrics for receiving devices and for gateways,
+not only for conversation edges.
+
+`ot-pcap-processor file capture.pcap --corona network.ttl` emits this topology
+with stable, protocol-scoped endpoint URIs.
+
 ## Example Output Snippet (Turtle)
 
 ```turtle

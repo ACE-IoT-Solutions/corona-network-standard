@@ -34,6 +34,23 @@ jobs:
       run: |
         uv run pytest --cov=src/corona_network_standard --cov-report=xml
 
+    - name: Verify packaged ontology and shapes
+      run: |
+        uv build --wheel
+        python - <<'PY'
+        from pathlib import Path
+        from zipfile import ZipFile
+
+        wheel = next(Path("dist").glob("*.whl"))
+        with ZipFile(wheel) as archive:
+            files = set(archive.namelist())
+        for resource in (
+            "corona_network_standard/data/ontology/network-ontology.ttl",
+            "corona_network_standard/data/shapes/network-shapes.ttl",
+        ):
+            assert resource in files, f"Missing packaged resource: {resource}"
+        PY
+
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
       with:
